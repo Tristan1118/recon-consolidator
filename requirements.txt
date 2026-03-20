@@ -1,3 +1,1 @@
-# No external runtime dependencies (stdlib only).
-# Dev dependencies:
-# pip install pytest
+pip install pytest

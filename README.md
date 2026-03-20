@@ -2,8 +2,6 @@
 
 A lightweight Python CLI tool for consolidating external reconnaissance data into a single SQLite database. Ingest output from multiple tools, deduplicate findings, and query across all data in one place.
 
-Python 3, stdlib only. No external dependencies.
-
 ## Quick Start
 
 ```bash
