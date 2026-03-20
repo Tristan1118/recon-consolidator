@@ -1,0 +1,9 @@
+# subfinder results
+www.Example.COM
+api.example.com
+   mail.example.com
+
+API.EXAMPLE.COM
+dev.example.com.
+
+blog.example.com

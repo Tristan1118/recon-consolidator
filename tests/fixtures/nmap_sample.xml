@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<nmaprun scanner="nmap" args="nmap -sV -oX nmap_sample.xml 10.0.0.1 10.0.0.2" start="1700000000" startstr="Wed Nov 15 00:00:00 2023" version="7.94" xmloutputversion="1.05">
+  <host starttime="1700000000" endtime="1700000010">
+    <status state="up" reason="syn-ack"/>
+    <address addr="10.0.0.1" addrtype="ipv4"/>
+    <hostnames>
+      <hostname name="web.example.com" type="PTR"/>
+    </hostnames>
+    <ports>
+      <port protocol="tcp" portid="80">
+        <state state="open" reason="syn-ack"/>
+        <service name="http" product="nginx" version="1.24.0"/>
+      </port>
+      <port protocol="tcp" portid="443">
+        <state state="open" reason="syn-ack"/>
+        <service name="https" product="nginx" version="1.24.0"/>
+      </port>
+      <port protocol="tcp" portid="22">
+        <state state="filtered" reason="no-response"/>
+        <service name="ssh"/>
+      </port>
+    </ports>
+  </host>
+  <host starttime="1700000000" endtime="1700000010">
+    <status state="up" reason="syn-ack"/>
+    <address addr="10.0.0.2" addrtype="ipv4"/>
+    <hostnames>
+      <hostname name="mail.example.com" type="PTR"/>
+    </hostnames>
+    <ports>
+      <port protocol="tcp" portid="25">
+        <state state="open" reason="syn-ack"/>
+        <service name="smtp" product="Postfix"/>
+      </port>
+      <port protocol="tcp" portid="993">
+        <state state="open" reason="syn-ack"/>
+        <service name="imaps" product="Dovecot"/>
+      </port>
+    </ports>
+  </host>
+</nmaprun>
