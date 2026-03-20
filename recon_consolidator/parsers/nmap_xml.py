@@ -24,19 +24,22 @@ class NmapXmlParser(BaseIngestor):
             if addr is not None:
                 ip = addr.get("addr")
 
-            if ip is None:
-                continue
-
             # Extract hostnames
+            first_hostname = None
             hostnames = host.find("hostnames")
             if hostnames is not None:
                 for hostname in hostnames.findall("hostname"):
                     name = hostname.get("name")
                     if name:
+                        if first_hostname is None:
+                            first_hostname = name
                         subdomain_records.append({
                             "fqdn": name,
                             "source": self.tool_name,
                         })
+
+            if ip is None and first_hostname is None:
+                continue
 
             # Extract ports
             ports_elem = host.find("ports")
@@ -63,6 +66,7 @@ class NmapXmlParser(BaseIngestor):
 
                 port_records.append({
                     "ip": ip,
+                    "hostname": first_hostname,
                     "port": portid,
                     "protocol": protocol,
                     "state": state,

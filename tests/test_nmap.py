@@ -19,10 +19,14 @@ def test_parse_ports(db_path):
     # Check a specific port
     http = [p for p in ports if p["port"] == 80][0]
     assert http["ip"] == "10.0.0.1"
+    assert http["hostname"] == "web.example.com"
     assert http["state"] == "open"
     assert http["service"] == "http"
     assert "nginx" in http["version"]
     assert http["scan_profile"] == "light"
+    # Check second host's hostname
+    smtp = [p for p in ports if p["port"] == 25][0]
+    assert smtp["hostname"] == "mail.example.com"
     parser.close()
 
 
@@ -52,6 +56,14 @@ def test_ingest_populates_db(db_path):
         "SELECT DISTINCT scan_profile FROM ports"
     ).fetchone()
     assert profile["scan_profile"] == "light"
+
+    # Verify hostnames populated on port records
+    hostnames = parser.conn.execute(
+        "SELECT DISTINCT hostname FROM ports ORDER BY hostname"
+    ).fetchall()
+    hnames = [r["hostname"] for r in hostnames]
+    assert "web.example.com" in hnames
+    assert "mail.example.com" in hnames
     parser.close()
 
 

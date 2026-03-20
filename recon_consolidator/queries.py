@@ -28,23 +28,26 @@ QUERIES = {
         SELECT h.provider, COUNT(DISTINCT s.fqdn) AS subdomain_count,
                GROUP_CONCAT(DISTINCT s.fqdn) AS subdomains
         FROM subdomains s
-        JOIN dns_records d ON s.id = d.subdomain_id AND d.record_type IN ('A', 'AAAA')
-        JOIN hosting h ON d.value = h.ip
+        LEFT JOIN dns_records d ON s.id = d.subdomain_id AND d.record_type IN ('A', 'AAAA')
+        JOIN hosting h ON (d.value IS NOT NULL AND d.value = h.ip)
+            OR (h.hostname IS NOT NULL AND s.fqdn = h.hostname)
         GROUP BY h.provider
         ORDER BY subdomain_count DESC
         """,
     ),
     "open-ports": (
-        "IPs with open ports, joined to subdomains",
+        "Open ports joined to subdomains",
         """
-        SELECT p.ip, p.port, p.protocol, p.service, p.version, p.scan_profile,
+        SELECT COALESCE(p.ip, '(none)') AS ip, p.hostname, p.port, p.protocol,
+               p.service, p.version, p.scan_profile,
                GROUP_CONCAT(DISTINCT s.fqdn) AS subdomains
         FROM ports p
-        LEFT JOIN dns_records d ON p.ip = d.value AND d.record_type IN ('A', 'AAAA')
+        LEFT JOIN dns_records d ON p.ip IS NOT NULL AND p.ip = d.value AND d.record_type IN ('A', 'AAAA')
         LEFT JOIN subdomains s ON d.subdomain_id = s.id
+            OR (p.hostname IS NOT NULL AND s.fqdn = LOWER(p.hostname))
         WHERE p.state = 'open'
-        GROUP BY p.ip, p.port, p.protocol, p.scan_profile
-        ORDER BY p.ip, p.port
+        GROUP BY p.ip, p.hostname, p.port, p.protocol, p.scan_profile
+        ORDER BY COALESCE(p.ip, p.hostname), p.port
         """,
     ),
     "single-source": (
@@ -57,12 +60,12 @@ QUERIES = {
         """,
     ),
     "no-hosting": (
-        "IPs with DNS records but no hosting classification",
+        "IPs/hostnames with DNS records but no hosting classification",
         """
         SELECT DISTINCT d.value AS ip, s.fqdn, d.record_type
         FROM dns_records d
         JOIN subdomains s ON d.subdomain_id = s.id
-        LEFT JOIN hosting h ON d.value = h.ip
+        LEFT JOIN hosting h ON (d.value = h.ip) OR (s.fqdn = h.hostname)
         WHERE d.record_type IN ('A', 'AAAA')
           AND h.id IS NULL
         ORDER BY d.value

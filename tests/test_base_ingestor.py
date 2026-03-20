@@ -152,3 +152,46 @@ def test_insert_ports(db_path, tmp_path):
     ports = ing.conn.execute("SELECT COUNT(*) as c FROM ports").fetchone()
     assert ports["c"] == 2
     ing.close()
+
+
+def test_insert_ports_hostname_only(db_path, tmp_path):
+    f = tmp_path / "ports_host.txt"
+    f.write_text("hostname scan\n")
+
+    class HostPortIngestor(BaseIngestor):
+        tool_name = "port-tool"
+        def parse(self, filepath):
+            return [
+                {"hostname": "web.example.com", "port": 80, "protocol": "tcp", "state": "open", "service": "http"},
+                {"hostname": "web.example.com", "port": 443, "protocol": "tcp", "state": "open", "service": "https"},
+            ]
+        def _insert(self, records):
+            return self.insert_ports(records)
+
+    ing = HostPortIngestor(db_path)
+    count = ing.ingest(str(f))
+    assert count == 2
+    row = ing.conn.execute("SELECT ip, hostname FROM ports WHERE port = 80").fetchone()
+    assert row["ip"] is None
+    assert row["hostname"] == "web.example.com"
+    ing.close()
+
+
+def test_insert_ports_no_identifier_rejected(db_path, tmp_path):
+    f = tmp_path / "ports_bad.txt"
+    f.write_text("bad data\n")
+
+    class BadPortIngestor(BaseIngestor):
+        tool_name = "port-tool"
+        def parse(self, filepath):
+            return [{"port": 80, "protocol": "tcp"}]
+        def _insert(self, records):
+            return self.insert_ports(records)
+
+    ing = BadPortIngestor(db_path)
+    # The CHECK constraint should cause this to fail silently (caught exception in insert_ports)
+    count = ing.ingest(str(f))
+    assert count == 0
+    ports = ing.conn.execute("SELECT COUNT(*) as c FROM ports").fetchone()
+    assert ports["c"] == 0
+    ing.close()

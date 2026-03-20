@@ -22,12 +22,12 @@ def conn(tmp_path):
         "INSERT INTO dns_records (subdomain_id, record_type, value, source) VALUES (2, 'CNAME', 'lb.example.com', 'dig')"
     )
     c.execute(
-        "INSERT INTO ports (ip, port, protocol, state, service, scan_profile) "
-        "VALUES ('10.0.0.1', 80, 'tcp', 'open', 'http', 'light')"
+        "INSERT INTO ports (ip, hostname, port, protocol, state, service, scan_profile) "
+        "VALUES ('10.0.0.1', 'web.example.com', 80, 'tcp', 'open', 'http', 'light')"
     )
     c.execute(
-        "INSERT INTO ports (ip, port, protocol, state, service, scan_profile) "
-        "VALUES ('10.0.0.1', 443, 'tcp', 'open', 'https', 'light')"
+        "INSERT INTO ports (ip, hostname, port, protocol, state, service, scan_profile) "
+        "VALUES ('10.0.0.1', 'web.example.com', 443, 'tcp', 'open', 'https', 'light')"
     )
     c.execute(
         "INSERT INTO raw_imports (filename, file_hash, tool, row_count) "
@@ -69,9 +69,26 @@ def test_single_source(conn):
 def test_open_ports(conn):
     desc, cols, rows = run_query(conn, "open-ports")
     assert len(rows) == 2
-    ports = [r[1] for r in rows]
+    # Column order: ip, hostname, port, protocol, ...
+    ports = [r[2] for r in rows]
     assert 80 in ports
     assert 443 in ports
+
+
+def test_open_ports_hostname_only(conn):
+    """Port with hostname but no IP should still resolve to its subdomain."""
+    conn.execute("INSERT INTO subdomains (fqdn, source) VALUES ('cdn.example.com', 'manual')")
+    conn.execute(
+        "INSERT INTO ports (hostname, port, protocol, state, service, scan_profile) "
+        "VALUES ('cdn.example.com', 8080, 'tcp', 'open', 'http-alt', 'light')"
+    )
+    conn.commit()
+    desc, cols, rows = run_query(conn, "open-ports")
+    # Find the hostname-only row
+    cdn_rows = [r for r in rows if r[2] == 8080]
+    assert len(cdn_rows) == 1
+    assert cdn_rows[0][0] == "(none)"  # ip is COALESCE'd to (none)
+    assert cdn_rows[0][1] == "cdn.example.com"
 
 
 def test_summary(conn):

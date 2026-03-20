@@ -39,18 +39,22 @@ CREATE TABLE IF NOT EXISTS whois_data (
 
 CREATE TABLE IF NOT EXISTS hosting (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ip TEXT UNIQUE NOT NULL,
+    ip TEXT,
+    hostname TEXT,
     provider TEXT,
     cdn TEXT,
     region TEXT,
     asn TEXT,
     classification TEXT,
-    notes TEXT
+    notes TEXT,
+    CHECK (ip IS NOT NULL OR hostname IS NOT NULL),
+    UNIQUE(ip, hostname)
 );
 
 CREATE TABLE IF NOT EXISTS ports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ip TEXT NOT NULL,
+    ip TEXT,
+    hostname TEXT,
     port INTEGER NOT NULL,
     protocol TEXT DEFAULT 'tcp',
     state TEXT,
@@ -60,7 +64,8 @@ CREATE TABLE IF NOT EXISTS ports (
     scan_profile TEXT,
     scanned_at TEXT DEFAULT CURRENT_TIMESTAMP,
     notes TEXT,
-    UNIQUE(ip, port, protocol, scan_profile)
+    CHECK (ip IS NOT NULL OR hostname IS NOT NULL),
+    UNIQUE(ip, hostname, port, protocol, scan_profile)
 );
 
 CREATE TABLE IF NOT EXISTS raw_imports (

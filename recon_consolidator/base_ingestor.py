@@ -136,10 +136,11 @@ class BaseIngestor:
         for rec in records:
             try:
                 self.conn.execute(
-                    "INSERT INTO ports (ip, port, protocol, state, service, banner, version, scan_profile) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO ports (ip, hostname, port, protocol, state, service, banner, version, scan_profile) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
-                        rec["ip"],
+                        rec.get("ip"),
+                        rec.get("hostname"),
                         rec["port"],
                         rec.get("protocol", "tcp"),
                         rec.get("state"),
